@@ -1,0 +1,13 @@
+mqtt:
+  broker: localhost
+  port: 1883
+  producer:
+    client_id: producer
+    topics:
+      - name: test/producer
+        qos: 0
+  consumer:
+    client_id: consumer
+    topics:
+      - name: S9IMP6000067BSF/report
+        qos: 2
