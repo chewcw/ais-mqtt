@@ -1,10 +1,11 @@
+import importlib
 import logging
 import threading
-from typing import Dict, List, Optional
+from typing import Any, Dict, List
 
 from asusiot_aissens_mqtt.mqtt_config import MQTTConfig
 from asusiot_aissens_mqtt.mqtt_consumer import MQTTConsumer
-from asusiot_aissens_mqtt.mqtt_producer import MQTTProducer
+from asusiot_aissens_mqtt.plugins.interface import Plugin
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +18,9 @@ class MQTT(threading.Thread):
     def __init__(self, config: Dict):
         super().__init__()
         self.config = config
-        self.producer: Optional[MQTTProducer] = None
         self.mqtt_consumers: List[MQTTConsumer] = []
         self._stop_event = threading.Event()
         self._validate_and_initialize_config(config)
-
 
     def _validate_and_initialize_config(self, config: Dict) -> None:
         """Validate configuration and initialize MQTT components."""
@@ -37,9 +36,7 @@ class MQTT(threading.Thread):
 
             # Validate mqtt configuration
             missing_fields = [
-                field
-                for field in ["broker", "producer", "consumer"]
-                if field not in mqtt_config
+                field for field in ["broker", "consumer"] if field not in mqtt_config
             ]
             if missing_fields:
                 raise MQTTConfigError(
@@ -47,7 +44,6 @@ class MQTT(threading.Thread):
                 )
 
             # Initialize with mqtt_config instead of config
-            self._initialize_producer(mqtt_config)
             self._initialize_consumers(mqtt_config)
         except (KeyError, TypeError, ValueError) as e:
             raise MQTTConfigError(f"Invalid configuration: {str(e)}")
@@ -58,7 +54,7 @@ class MQTT(threading.Thread):
             raise MQTTConfigError("Configuration must be a dictionary")
 
         missing_fields = [
-            field for field in ["broker", "producer", "consumer"] if field not in config
+            field for field in ["broker", "consumer"] if field not in config
         ]
         if missing_fields:
             raise MQTTConfigError(
@@ -66,7 +62,7 @@ class MQTT(threading.Thread):
             )
 
     def _validate_component_config(self, config: Dict, component: str) -> None:
-        """Validate producer or consumer configuration."""
+        """Validate consumer configuration."""
         if not isinstance(config[component], dict):
             raise MQTTConfigError(
                 f"{component.capitalize()} configuration must be a dictionary"
@@ -76,22 +72,9 @@ class MQTT(threading.Thread):
         if "client_id" not in config[component]:
             raise MQTTConfigError(f"{component.capitalize()} client_id not configured")
 
-    def _initialize_producer(self, mqtt_config: Dict) -> None:
-        """Initialize MQTT producer."""
-        self._validate_component_config(mqtt_config, "producer")
-        producer_config = MQTTConfig(
-            broker=mqtt_config["broker"],
-            port=mqtt_config.get("port", 1883),  # Add port from config
-            topic=mqtt_config["producer"]["topics"][0]["name"],
-            qos=mqtt_config["producer"]["topics"][0]["qos"],
-            client_id=mqtt_config["producer"]["client_id"],
-        )
-        self.producer = MQTTProducer(producer_config)
-
     def _initialize_consumers(self, mqtt_config: Dict) -> None:
         """Initialize MQTT consumers."""
         self._validate_component_config(mqtt_config, "consumer")
-
         mqtt_consumer_configs = [
             self._create_consumer_config(mqtt_config, topic, i)
             for i, topic in enumerate(mqtt_config["consumer"]["topics"])
@@ -111,12 +94,31 @@ class MQTT(threading.Thread):
             port=mqtt_config.get("port", 1883),
             topic=topic.get("name", ""),
             qos=topic.get("qos", 0),
+            plugin=topic.get("plugin", "default"),
             client_id=f"{mqtt_config['consumer']['client_id']}_{index}",
         )
 
-    def _on_message(self, topic: str, payload: bytes) -> None:
+    def load_plugin(self, name: str) -> Plugin:
+        """Load a plugin module."""
+        # Change this line to use the full package path
+        module = importlib.import_module(f"asusiot_aissens_mqtt.plugins.{name}")
+        return getattr(module, name.capitalize())()
+
+    def _on_message(self, topic: str, payload: bytes, userdata: Any) -> None:
         """Handle incoming MQTT messages."""
-        logger.info(f"Received message on topic {topic}: {payload}")
+        topics = self.config.get("mqtt", {}).get("consumer", {}).get("topics", [])
+        # Find the matching topic configuration
+        topic_conf = next((item for item in topics if item.get("name") == topic), None)
+        if topic_conf:
+            plugin_name = topic_conf.get("plugin")
+            if plugin_name:
+                plugin_instance = self.load_plugin(plugin_name)
+                plugin_instance.input(topic, payload, userdata)
+                logger.info(f"Plugin {plugin_name} called for topic: {topic}")
+            else:
+                logger.info(f"No plugin configured for topic: {topic}")
+        else:
+            logger.info(f"No configuration found for topic: {topic}")
 
     def run(self) -> None:
         """Run the MQTT thread."""
@@ -134,8 +136,6 @@ class MQTT(threading.Thread):
         """Clean up MQTT connections."""
         for consumer in self.mqtt_consumers:
             consumer.stop()
-        if self.producer:
-            self.producer.stop()
 
     def stop(self) -> None:
         """Signal the thread to stop."""

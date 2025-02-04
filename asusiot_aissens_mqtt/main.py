@@ -9,6 +9,12 @@ from asusiot_aissens_mqtt.mqtt import MQTT
 
 logger = logging.getLogger(__name__)
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+
 def main():
     config = load_config()
     with MQTT(config) as mqtt:
