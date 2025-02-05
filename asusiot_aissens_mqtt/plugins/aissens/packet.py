@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic.config import JsonValue
 
+from asusiot_aissens_mqtt.db.data_saver_interface import DataSaverInterface
+from asusiot_aissens_mqtt.db.sqlite import SqliteDataSaver
 from asusiot_aissens_mqtt.packet_processor import (
     BytesExtractInput,
     HexToNumberInput,
@@ -21,6 +23,9 @@ pp = PacketProcessor()
 
 
 class Packet(Plugin):
+    def __init__(self) -> None:
+        self.data_saver: DataSaverInterface = SqliteDataSaver("sensor_data.db")
+
     def input(self, topic: str, payload: bytes, userdata: Any) -> None:
         logger.debug(
             f"Received message on topic {topic}, payload: {payload.hex()[:20]}..."
@@ -73,9 +78,10 @@ class Packet(Plugin):
 
     def _output(self, timestamp: datetime, name: str, data: JsonValue) -> None:
         # Save the data to the database
-        logger.info(f"Timestamp: {timestamp}")
-        logger.info(f"Name: {name}")
-        logger.info(f"Data: {data}")
+        try:
+            self.data_saver.save(timestamp, name, data)
+        except Exception as e:
+            logger.error(f"Failed to save data to the database: {str(e)}")
 
     def _get_sensor_name(self, topic: str) -> str:
         return topic.split("/")[0]
