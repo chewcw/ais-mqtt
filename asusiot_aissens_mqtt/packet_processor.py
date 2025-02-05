@@ -1,5 +1,7 @@
 import struct
+from datetime import datetime
 from typing import Literal, Union
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, field_validator
 
@@ -24,6 +26,17 @@ class HexToNumberInput(BaseModel):
         if v not in ["float", "int"]:
             raise ValueError('data_type must be either "float" or "int"')
         return v
+
+    @field_validator("endian")
+    def validate_endian(cls, v):
+        if v not in ["big", "little"]:
+            raise ValueError('endian must be either "big" or "little"')
+        return v
+
+
+class HexToTimestampInput(BaseModel):
+    hex_str: str
+    endian: Literal["big", "little"] = "little"
 
     @field_validator("endian")
     def validate_endian(cls, v):
@@ -77,16 +90,88 @@ class PacketProcessor:
 
     def hex_to_number(self, input_data: HexToNumberInput) -> Union[float, int]:
         """
-        [Previous hex_to_number implementation remains the same]
+        Converts hexadecimal string to a number (float or int).
+
+        Args:
+            input_data (HexToNumberInput): Pydantic model containing:
+                - hex_str (str): Hexadecimal string (1 to 8 bytes)
+                - data_type (str): Type of number to convert to ('float' or 'int')
+                - endian (str): Byte order ('big' or 'little')
+
+        Returns:
+            Union[float, int]: Converted number based on data_type
+
+        Example:
+            >>> processor = PacketProcessor()
+            >>> processor.hex_to_number(HexToNumberInput(hex_str='41200000', data_type='float'))
+            10.0
         """
         hex_str = input_data.hex_str
-        if len(hex_str) < 8:
-            hex_str = hex_str.ljust(8, "0")
-        elif len(hex_str) > 8:
-            hex_str = hex_str[:8]
+        byte_data = bytes.fromhex(hex_str)
+        byte_length = len(byte_data)
+
+        # Define format string based on endianness
+        fmt = "<" if input_data.endian == "little" else ">"
+
+        # Add format specifier based on data type and byte length
+        if input_data.data_type == "float":
+            fmt += "f"  # single precision float (4 bytes)
+            if byte_length != 4:
+                raise ValueError(
+                    "Float conversion requires exactly 4 bytes (8 hex characters)"
+                )
+        else:  # int
+            if byte_length == 1:
+                fmt += "b"  # signed char (1 byte)
+            elif byte_length == 2:
+                fmt += "h"  # short (2 bytes)
+            elif byte_length <= 4:
+                fmt += "i"  # int (4 bytes)
+            else:
+                fmt += "q"  # long long (8 bytes)
+
+        # Unpack the bytes according to the format
+        value = struct.unpack(fmt, byte_data)[0]
+
+        return int(value) if input_data.data_type == "int" else value
+
+    def hex_to_timestamp(self, input_data: HexToTimestampInput) -> datetime:
+        """
+        Converts 8 bytes hex string to UTC timestamp.
+
+        Args:
+            input_data (HexToTimestampInput): Pydantic model containing:
+                - hex_str (str): Hexadecimal string (8 bytes/16 characters)
+                - endian (str): Byte order ('big' or 'little')
+
+        Returns:
+            datetime: UTC Timestamp converted from hex bytes
+
+        Example:
+            >>> processor = PacketProcessor()
+            >>> processor.hex_to_timestamp(HexToTimestampInput(hex_str='60851A1A00000000'))
+            datetime.datetime(2021, 4, 25, 10, 26, 26)
+        """
+        hex_str = input_data.hex_str
+        if len(hex_str) != 16:
+            raise ValueError("Hex string must be exactly 8 bytes (16 characters)")
 
         byte_data = bytes.fromhex(hex_str)
         fmt = "<" if input_data.endian == "little" else ">"
-        fmt += "f" if input_data.data_type == "float" else "i"
+        fmt += "Q"  # unsigned long long (8 bytes)
 
-        return struct.unpack(fmt, byte_data)[0]
+        timestamp = struct.unpack(fmt, byte_data)[0]
+        # Get the system's local timezone and offset
+        local_dt = datetime.now().astimezone()
+        local_tz = local_dt.tzinfo
+        if local_tz is not None:
+            offset = local_tz.utcoffset(local_dt)
+            if offset is not None:
+                offset_seconds = offset.total_seconds()
+                # Adjust the timestamp by subtracting the offset
+                corrected_timestamp = timestamp - offset_seconds
+                return datetime.fromtimestamp(corrected_timestamp, tz=local_tz)
+            else:
+                return datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC"))
+        else:
+            return datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC"))

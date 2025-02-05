@@ -1,3 +1,21 @@
+from typing import Literal
+
+DataTypeName = Literal[
+    "Raw data",
+    "FFT data",
+    "Feature",
+    "Battery",
+    "Hibernate",
+    "Real time raw data",
+    "Real time FFT",
+    "Raw data + FFT",
+    "Raw time raw data + FFT",
+    "OA only",
+    "Real time OA only",
+    "Ask command",
+    "Reserved"
+]
+
 DATA_TYPE_MAP = {
     0: "Raw data",
     1: "FFT data",
@@ -14,4 +32,3 @@ DATA_TYPE_MAP = {
     10: "Real time OA only",
     11: "Ask command",
 }
-

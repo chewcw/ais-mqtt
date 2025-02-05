@@ -6,4 +6,4 @@ mqtt:
     topics:
       - name: S9IMP6000067BSF/report
         qos: 2
-        plugin: "stdout"
+        plugin: "aissens.packet"

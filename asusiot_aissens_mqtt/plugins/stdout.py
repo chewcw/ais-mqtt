@@ -1,12 +1,22 @@
+from datetime import datetime
+from typing import Any, Dict
+
+from pydantic.config import JsonValue
+
 from asusiot_aissens_mqtt.plugins.interface import Plugin
 
 
 class Stdout(Plugin):
-    def input(self, topic: str, payload: bytes, userdata: None) -> None:
+    def input(self, topic: str, payload: bytes, userdata: Any) -> None:
         print(f"Received message on topic {topic}")
         print(f"Payload (hex): {payload.hex()}")  # Print hex representation instead
-        try:
-            # Try UTF-8 decode, but fallback to hex if it fails
-            print(f"Payload (text): {payload.decode('utf-8')}")
-        except UnicodeDecodeError:
-            print("Payload is not UTF-8 encoded text")
+        data_str = payload.hex()
+        data: Dict[str, JsonValue] = {"bytes": data_str}
+        timestamp = datetime.now()
+        name = topic.split("/")[0]  # Get the sensor name
+        self._output(timestamp, name, data)
+
+    def _output(self, timestamp: datetime, name: str, data: JsonValue) -> None:
+        print(f"Timestamp: {timestamp}")
+        print(f"Name: {name}")
+        print(f"Data: {data}")

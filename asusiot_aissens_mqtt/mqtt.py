@@ -100,9 +100,11 @@ class MQTT(threading.Thread):
 
     def load_plugin(self, name: str) -> Plugin:
         """Load a plugin module."""
-        # Change this line to use the full package path
-        module = importlib.import_module(f"asusiot_aissens_mqtt.plugins.{name}")
-        return getattr(module, name.capitalize())()
+        parts = name.split(".")
+        module_path = f"asusiot_aissens_mqtt.plugins.{'.'.join(parts)}"
+        module = importlib.import_module(module_path)
+        class_name = parts[-1].capitalize()
+        return getattr(module, class_name)()
 
     def _on_message(self, topic: str, payload: bytes, userdata: Any) -> None:
         """Handle incoming MQTT messages."""
