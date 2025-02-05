@@ -109,6 +109,13 @@ class PacketFFT:
     acceleration_data: dict[str, np.ndarray]
 
 
+class FFTDecodeError(Exception):
+    def __init__(self, field_name: str, error: Exception):
+        self.field_name = field_name
+        self.error = error
+        super().__init__(f"Failed to decode field '{field_name}': {str(error)}")
+
+
 class PacketFFTDecoder:
     def __init__(self, file_bytes: bytes):
         """
@@ -123,153 +130,226 @@ class PacketFFTDecoder:
     def decode(self) -> PacketFFT:
         """
         Decode the binary data into a structured FFT packet.
+        Raises FFTDecodeError with specific field information on failure.
         """
-        data_type_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=30, length=1)
-        )
-        data_type = int(
-            pp.hex_to_number(
-                HexToNumberInput(
-                    hex_str=data_type_hex, data_type="int", endian="little"
+        try:
+            data_type_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=0, length=1)
+            )
+            data_type = int(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=data_type_hex, data_type="int", endian="little"
+                    )
                 )
             )
-        )
-        data_type_name = cast(DataTypeName, DATA_TYPE_MAP.get(data_type, "Reserved"))
+        except Exception as e:
+            raise FFTDecodeError("data_type", e)
 
-        data_length_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=31, length=4)
-        )
-        data_length = pp.hex_to_number(
-            HexToNumberInput(hex_str=data_length_hex, data_type="int", endian="big")
-        )
-
-        timestamp_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=35, length=8)
-        )
-        timestamp = pp.hex_to_timestamp(
-            HexToTimestampInput(hex_str=timestamp_hex, endian="little")
-        )
-
-        fft_result_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=43, length=1)
-        )
-        fft_result = pp.hex_to_number(
-            HexToNumberInput(hex_str=fft_result_hex, data_type="int", endian="little")
-        )
-
-        battery_level_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=44, length=1)
-        )
-        battery_level = pp.hex_to_number(
-            HexToNumberInput(
-                hex_str=battery_level_hex, data_type="int", endian="little"
+        try:
+            data_type_name = cast(
+                DataTypeName, DATA_TYPE_MAP.get(data_type, "Reserved")
             )
-        )
+        except Exception as e:
+            raise FFTDecodeError("data_type_name", e)
 
-        adcavg_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=45, length=2)
-        )
-        adcavg = pp.hex_to_number(
-            HexToNumberInput(hex_str=adcavg_hex, data_type="int", endian="little")
-        )
-        adcavg = adcavg / 1000
-
-        adclast_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=47, length=2)
-        )
-        adclast = pp.hex_to_number(
-            HexToNumberInput(hex_str=adclast_hex, data_type="int", endian="little")
-        )
-        adclast = adclast / 1000
-
-        temperature_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=49, length=2)
-        )
-        temperature = pp.hex_to_number(
-            HexToNumberInput(hex_str=temperature_hex, data_type="int", endian="little")
-        )
-        temperature = temperature / 1000
-
-        oa_x_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=51, length=4)
-        )
-        oa_x = pp.hex_to_number(
-            HexToNumberInput(hex_str=oa_x_hex, data_type="float", endian="little")
-        )
-
-        oa_y_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=55, length=4)
-        )
-        oa_y = pp.hex_to_number(
-            HexToNumberInput(hex_str=oa_y_hex, data_type="float", endian="little")
-        )
-
-        oa_z_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=59, length=4)
-        )
-        oa_z = pp.hex_to_number(
-            HexToNumberInput(hex_str=oa_z_hex, data_type="float", endian="little")
-        )
-
-        freq_resolution_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=63, length=4)
-        )
-        freq_resolution = pp.hex_to_number(
-            HexToNumberInput(
-                hex_str=freq_resolution_hex, data_type="float", endian="little"
+        try:
+            data_length_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=1, length=4)
             )
-        )
+            data_length = pp.hex_to_number(
+                HexToNumberInput(hex_str=data_length_hex, data_type="int", endian="big")
+            )
+        except Exception as e:
+            raise FFTDecodeError("data_length", e)
 
-        fft_length_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=67, length=4)
-        )
-        fft_length = pp.hex_to_number(
-            HexToNumberInput(hex_str=fft_length_hex, data_type="int", endian="big")
-        )
+        try:
+            timestamp_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=5, length=8)
+            )
+            timestamp = pp.hex_to_timestamp(
+                HexToTimestampInput(hex_str=timestamp_hex, endian="little")
+            )
+        except Exception as e:
+            raise FFTDecodeError("timestamp", e)
 
-        report_len_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=71, length=4)
-        )
-        report_len = int(
-            pp.hex_to_number(
-                HexToNumberInput(hex_str=report_len_hex, data_type="int", endian="big")
+        try:
+            fft_result_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=13, length=1)
             )
-        )
+            fft_result = pp.hex_to_number(
+                HexToNumberInput(
+                    hex_str=fft_result_hex, data_type="int", endian="little"
+                )
+            )
+        except Exception as e:
+            raise FFTDecodeError("fft_result", e)
 
-        reserved_bytes_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=75, length=5)
-        )
-        reserved_bytes = bytes.fromhex(reserved_bytes_hex)
+        try:
+            battery_level_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=14, length=1)
+            )
+            battery_level = pp.hex_to_number(
+                HexToNumberInput(
+                    hex_str=battery_level_hex, data_type="int", endian="little"
+                )
+            )
+        except Exception as e:
+            raise FFTDecodeError("battery_level", e)
 
-        acc_x_values = np.zeros(report_len)
-        for i in range(report_len):
-            offset = 80 + i * 4
-            acc_x_hex = pp.extract_hex(
-                BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+        try:
+            adcavg_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=15, length=2)
             )
-            acc_x_values[i] = pp.hex_to_number(
-                HexToNumberInput(hex_str=acc_x_hex, data_type="float", endian="little")
+            adcavg = pp.hex_to_number(
+                HexToNumberInput(hex_str=adcavg_hex, data_type="int", endian="little")
             )
+            adcavg = adcavg / 1000
+        except Exception as e:
+            raise FFTDecodeError("adcavg", e)
 
-        acc_y_values = np.zeros(report_len)
-        for i in range(report_len):
-            offset = int(80 + report_len * 4 + i * 4)
-            acc_y_hex = pp.extract_hex(
-                BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+        try:
+            adclast_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=17, length=2)
             )
-            acc_y_values[i] = pp.hex_to_number(
-                HexToNumberInput(hex_str=acc_y_hex, data_type="float", endian="little")
+            adclast = pp.hex_to_number(
+                HexToNumberInput(hex_str=adclast_hex, data_type="int", endian="little")
             )
+            adclast = adclast / 1000
+        except Exception as e:
+            raise FFTDecodeError("adclast", e)
 
-        acc_z_values = np.zeros(report_len)
-        for i in range(report_len):
-            offset = int(80 + 2 * report_len * 4 + i * 4)
-            acc_z_hex = pp.extract_hex(
-                BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+        try:
+            temperature_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=19, length=2)
             )
-            acc_z_values[i] = pp.hex_to_number(
-                HexToNumberInput(hex_str=acc_z_hex, data_type="float", endian="little")
+            temperature = pp.hex_to_number(
+                HexToNumberInput(
+                    hex_str=temperature_hex, data_type="int", endian="little"
+                )
             )
+            temperature = temperature / 1000
+        except Exception as e:
+            raise FFTDecodeError("temperature", e)
+
+        try:
+            oa_x_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=21, length=4)
+            )
+            oa_x = pp.hex_to_number(
+                HexToNumberInput(hex_str=oa_x_hex, data_type="float", endian="little")
+            )
+        except Exception as e:
+            raise FFTDecodeError("oa_x", e)
+
+        try:
+            oa_y_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=25, length=4)
+            )
+            oa_y = pp.hex_to_number(
+                HexToNumberInput(hex_str=oa_y_hex, data_type="float", endian="little")
+            )
+        except Exception as e:
+            raise FFTDecodeError("oa_y", e)
+
+        try:
+            oa_z_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=29, length=4)
+            )
+            oa_z = pp.hex_to_number(
+                HexToNumberInput(hex_str=oa_z_hex, data_type="float", endian="little")
+            )
+        except Exception as e:
+            raise FFTDecodeError("oa_z", e)
+
+        try:
+            freq_resolution_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=33, length=4)
+            )
+            freq_resolution = pp.hex_to_number(
+                HexToNumberInput(
+                    hex_str=freq_resolution_hex, data_type="float", endian="little"
+                )
+            )
+        except Exception as e:
+            raise FFTDecodeError("freq_resolution", e)
+
+        try:
+            fft_length_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=37, length=4)
+            )
+            fft_length = pp.hex_to_number(
+                HexToNumberInput(hex_str=fft_length_hex, data_type="int", endian="big")
+            )
+        except Exception as e:
+            raise FFTDecodeError("fft_length", e)
+
+        try:
+            report_len_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=41, length=4)
+            )
+            report_len = int(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=report_len_hex, data_type="int", endian="big"
+                    )
+                )
+            )
+        except Exception as e:
+            raise FFTDecodeError("report_len", e)
+
+        try:
+            reserved_bytes_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=45, length=5)
+            )
+            reserved_bytes = bytes.fromhex(reserved_bytes_hex)
+        except Exception as e:
+            raise FFTDecodeError("reserved_bytes", e)
+
+        try:
+            acc_x_values = np.zeros(report_len)
+            for i in range(report_len):
+                offset = 50 + i * 4
+                acc_x_hex = pp.extract_hex(
+                    BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+                )
+                acc_x_values[i] = pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=acc_x_hex, data_type="float", endian="little"
+                    )
+                )
+        except Exception as e:
+            raise FFTDecodeError("acc_x_values", e)
+
+        try:
+            acc_y_values = np.zeros(report_len)
+            for i in range(report_len):
+                offset = int(50 + report_len * 4 + i * 4)
+                acc_y_hex = pp.extract_hex(
+                    BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+                )
+                acc_y_values[i] = pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=acc_y_hex, data_type="float", endian="little"
+                    )
+                )
+        except Exception as e:
+            raise FFTDecodeError("acc_y_values", e)
+
+        try:
+            acc_z_values = np.zeros(report_len)
+            for i in range(report_len):
+                offset = int(50 + 2 * report_len * 4 + i * 4)
+                acc_z_hex = pp.extract_hex(
+                    BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+                )
+                acc_z_values[i] = pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=acc_z_hex, data_type="float", endian="little"
+                    )
+                )
+        except Exception as e:
+            raise FFTDecodeError("acc_z_values", e)
 
         acceleration_data = {
             "x": acc_x_values,
@@ -277,69 +357,90 @@ class PacketFFTDecoder:
             "z": acc_z_values,
         }
 
-        vec_x_values = np.zeros(report_len)
-        for i in range(report_len):
-            offset = int(80 + 3 * report_len * 4 + i * 4)
-            vec_x_hex = pp.extract_hex(
-                BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
-            )
-            vec_x_values[i] = pp.hex_to_number(
-                HexToNumberInput(hex_str=vec_x_hex, data_type="float", endian="little")
-            )
+        try:
+            vec_x_values = np.zeros(report_len)
+            for i in range(report_len):
+                offset = int(50 + 3 * report_len * 4 + i * 4)
+                vec_x_hex = pp.extract_hex(
+                    BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+                )
+                vec_x_values[i] = pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=vec_x_hex, data_type="float", endian="little"
+                    )
+                )
+        except Exception as e:
+            raise FFTDecodeError("vec_x_values", e)
 
-        vec_y_values = np.zeros(report_len)
-        for i in range(report_len):
-            offset = int(80 + 4 * report_len * 4 + i * 4)
-            vec_y_hex = pp.extract_hex(
-                BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
-            )
-            vec_y_values[i] = pp.hex_to_number(
-                HexToNumberInput(hex_str=vec_y_hex, data_type="float", endian="little")
-            )
+        try:
+            vec_y_values = np.zeros(report_len)
+            for i in range(report_len):
+                offset = int(50 + 4 * report_len * 4 + i * 4)
+                vec_y_hex = pp.extract_hex(
+                    BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+                )
+                vec_y_values[i] = pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=vec_y_hex, data_type="float", endian="little"
+                    )
+                )
+        except Exception as e:
+            raise FFTDecodeError("vec_y_values", e)
 
-        vec_z_values = np.zeros(report_len)
-        for i in range(report_len):
-            offset = int(80 + 5 * report_len * 4 + i * 4)
-            vec_z_hex = pp.extract_hex(
-                BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
-            )
-            vec_z_values[i] = pp.hex_to_number(
-                HexToNumberInput(hex_str=vec_z_hex, data_type="float", endian="little")
-            )
+        try:
+            vec_z_values = np.zeros(report_len)
+            for i in range(report_len):
+                offset = int(50 + 5 * report_len * 4 + i * 4)
+                vec_z_hex = pp.extract_hex(
+                    BytesExtractInput(data=self.file_bytes, offset=offset, length=4)
+                )
+                vec_z_values[i] = pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=vec_z_hex, data_type="float", endian="little"
+                    )
+                )
+        except Exception as e:
+            raise FFTDecodeError("vec_z_values", e)
 
         velocity_data = {"x": vec_x_values, "y": vec_y_values, "z": vec_z_values}
 
-        acc_x_padded = np.pad(
-            acceleration_data["x"],
-            [(0, int(fft_length - len(acceleration_data["x"])))],
-            mode="constant",
-        )
-        acc_y_padded = np.pad(
-            acceleration_data["y"],
-            [(0, int(fft_length - len(acceleration_data["y"])))],
-            mode="constant",
-        )
-        acc_z_padded = np.pad(
-            acceleration_data["z"],
-            [(0, int(fft_length - len(acceleration_data["z"])))],
-            mode="constant",
-        )
+        try:
+            acc_x_padded = np.pad(
+                acceleration_data["x"],
+                [(0, int(fft_length - len(acceleration_data["x"])))],
+                mode="constant",
+            )
+            acc_y_padded = np.pad(
+                acceleration_data["y"],
+                [(0, int(fft_length - len(acceleration_data["y"])))],
+                mode="constant",
+            )
+            acc_z_padded = np.pad(
+                acceleration_data["z"],
+                [(0, int(fft_length - len(acceleration_data["z"])))],
+                mode="constant",
+            )
+        except Exception as e:
+            raise FFTDecodeError("acceleration_padding", e)
 
-        vec_x_padded = np.pad(
-            velocity_data["x"],
-            [(0, int(fft_length - len(velocity_data["x"])))],
-            mode="constant",
-        )
-        vec_y_padded = np.pad(
-            velocity_data["y"],
-            [(0, int(fft_length - len(velocity_data["y"])))],
-            mode="constant",
-        )
-        vec_z_padded = np.pad(
-            velocity_data["z"],
-            [(0, int(fft_length - len(velocity_data["z"])))],
-            mode="constant",
-        )
+        try:
+            vec_x_padded = np.pad(
+                velocity_data["x"],
+                [(0, int(fft_length - len(velocity_data["x"])))],
+                mode="constant",
+            )
+            vec_y_padded = np.pad(
+                velocity_data["y"],
+                [(0, int(fft_length - len(velocity_data["y"])))],
+                mode="constant",
+            )
+            vec_z_padded = np.pad(
+                velocity_data["z"],
+                [(0, int(fft_length - len(velocity_data["z"])))],
+                mode="constant",
+            )
+        except Exception as e:
+            raise FFTDecodeError("velocity_padding", e)
 
         self.fft_packet = PacketFFT(
             data_type=int(data_type),

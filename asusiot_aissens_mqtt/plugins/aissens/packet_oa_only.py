@@ -73,138 +73,180 @@ class PacketOAOnly:
     reserved: str
 
 
+class OADecodeError(Exception):
+    def __init__(self, field_name: str, original_error: Exception):
+        self.field_name = field_name
+        self.original_error = original_error
+        super().__init__(f"Error decoding field '{field_name}': {str(original_error)}")
+
+
 class PacketOADecoder:
-    """
-    Decoder class for OA (Overall) packets.
-
-    This class handles the decoding of binary OA packet data into structured data format.
-    It processes the binary data and extracts all relevant fields including header information,
-    sensor measurements, and overall acceleration values for all three axes.
-
-    Attributes:
-        file_bytes (bytes): Raw binary data to be decoded
-        packet (PacketOAOnly): Decoded packet data
-    """
-
     def __init__(self, file_bytes: bytes):
-        """
-        Initialize the FFT packet decoder.
-
-        Args:
-            file_bytes (bytes): Raw binary data to be decoded
-        """
         self.file_bytes = file_bytes
         self.oa_packet: PacketOAOnly | None = None
 
     def decode(self) -> PacketOAOnly:
         """
         Decode the binary data into structured OA packet data.
-        [...]
+        Raises OADecodeError with specific field information on failure.
         """
-        data_type_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=0, length=1)
-        )
-        data_type = int(
-            pp.hex_to_number(
-                HexToNumberInput(
-                    hex_str=data_type_hex, data_type="int", endian="little"
+        try:
+            data_type_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=0, length=1)
+            )
+            data_type = int(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=data_type_hex, data_type="int", endian="little"
+                    )
                 )
             )
-        )
-        # Ensure data_type_name is one of the valid literals from the PacketOAOnly type
-        data_type_name = cast(DataTypeName, DATA_TYPE_MAP.get(data_type, "Reserved"))
+        except Exception as e:
+            raise OADecodeError("data_type", e)
 
-        data_length_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=1, length=4)
-        )
-        data_length = int(
-            pp.hex_to_number(
-                HexToNumberInput(hex_str=data_length_hex, data_type="int", endian="big")
+        try:
+            data_type_name = cast(
+                DataTypeName, DATA_TYPE_MAP.get(data_type, "Reserved")
             )
-        )
+        except Exception as e:
+            raise OADecodeError("data_type_name", e)
 
-        timestamp_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=5, length=8)
-        )
-        timestamp = pp.hex_to_timestamp(
-            HexToTimestampInput(hex_str=timestamp_hex, endian="little")
-        )
-
-        status_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=13, length=1)
-        )
-        status = int(
-            pp.hex_to_number(
-                HexToNumberInput(hex_str=status_hex, data_type="int", endian="little")
+        try:
+            data_length_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=1, length=4)
             )
-        )
-
-        battery_level_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=14, length=1)
-        )
-        battery_level = int(
-            pp.hex_to_number(
-                HexToNumberInput(
-                    hex_str=battery_level_hex, data_type="int", endian="little"
+            data_length = int(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=data_length_hex, data_type="int", endian="big"
+                    )
                 )
             )
-        )
+        except Exception as e:
+            raise OADecodeError("data_length", e)
 
-        adcavg_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=15, length=2)
-        )
-        adcavg = pp.hex_to_number(
-            HexToNumberInput(hex_str=adcavg_hex, data_type="int", endian="little")
-        )
-        adcavg = adcavg / 1000
-
-        adclast_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=17, length=2)
-        )
-        adclast = pp.hex_to_number(
-            HexToNumberInput(hex_str=adclast_hex, data_type="int", endian="little")
-        )
-        adclast = adclast / 1000
-
-        temperature_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=19, length=2)
-        )
-        temperature = pp.hex_to_number(
-            HexToNumberInput(hex_str=temperature_hex, data_type="int", endian="little")
-        )
-        temperature = temperature / 1000
-
-        oa_x_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=21, length=4)
-        )
-        oa_x = float(
-            pp.hex_to_number(
-                HexToNumberInput(hex_str=oa_x_hex, data_type="float", endian="little")
+        try:
+            timestamp_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=5, length=8)
             )
-        )
-
-        oa_y_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=25, length=4)
-        )
-        oa_y = float(
-            pp.hex_to_number(
-                HexToNumberInput(hex_str=oa_y_hex, data_type="float", endian="little")
+            timestamp = pp.hex_to_timestamp(
+                HexToTimestampInput(hex_str=timestamp_hex, endian="little")
             )
-        )
+        except Exception as e:
+            raise OADecodeError("timestamp", e)
 
-        oa_z_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=29, length=4)
-        )
-        oa_z = float(
-            pp.hex_to_number(
-                HexToNumberInput(hex_str=oa_z_hex, data_type="float", endian="little")
+        try:
+            status_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=13, length=1)
             )
-        )
+            status = int(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=status_hex, data_type="int", endian="little"
+                    )
+                )
+            )
+        except Exception as e:
+            raise OADecodeError("status", e)
 
-        reserved_hex = pp.extract_hex(
-            BytesExtractInput(data=self.file_bytes, offset=33, length=17)
-        )
-        reserved = reserved_hex
+        try:
+            battery_level_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=14, length=1)
+            )
+            battery_level = int(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=battery_level_hex, data_type="int", endian="little"
+                    )
+                )
+            )
+        except Exception as e:
+            raise OADecodeError("battery_level", e)
+
+        try:
+            adcavg_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=15, length=2)
+            )
+            adcavg = pp.hex_to_number(
+                HexToNumberInput(hex_str=adcavg_hex, data_type="int", endian="little")
+            )
+            adcavg = adcavg / 1000
+        except Exception as e:
+            raise OADecodeError("adcavg", e)
+
+        try:
+            adclast_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=17, length=2)
+            )
+            adclast = pp.hex_to_number(
+                HexToNumberInput(hex_str=adclast_hex, data_type="int", endian="little")
+            )
+            adclast = adclast / 1000
+        except Exception as e:
+            raise OADecodeError("adclast", e)
+
+        try:
+            temperature_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=19, length=2)
+            )
+            temperature = pp.hex_to_number(
+                HexToNumberInput(
+                    hex_str=temperature_hex, data_type="int", endian="little"
+                )
+            )
+            temperature = temperature / 1000
+        except Exception as e:
+            raise OADecodeError("temperature", e)
+
+        try:
+            oa_x_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=21, length=4)
+            )
+            oa_x = float(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=oa_x_hex, data_type="float", endian="little"
+                    )
+                )
+            )
+        except Exception as e:
+            raise OADecodeError("oa_x", e)
+
+        try:
+            oa_y_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=25, length=4)
+            )
+            oa_y = float(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=oa_y_hex, data_type="float", endian="little"
+                    )
+                )
+            )
+        except Exception as e:
+            raise OADecodeError("oa_y", e)
+
+        try:
+            oa_z_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=29, length=4)
+            )
+            oa_z = float(
+                pp.hex_to_number(
+                    HexToNumberInput(
+                        hex_str=oa_z_hex, data_type="float", endian="little"
+                    )
+                )
+            )
+        except Exception as e:
+            raise OADecodeError("oa_z", e)
+
+        try:
+            reserved_hex = pp.extract_hex(
+                BytesExtractInput(data=self.file_bytes, offset=33, length=17)
+            )
+            reserved = reserved_hex
+        except Exception as e:
+            raise OADecodeError("reserved", e)
 
         self.oa_packet = PacketOAOnly(
             data_type=data_type,
