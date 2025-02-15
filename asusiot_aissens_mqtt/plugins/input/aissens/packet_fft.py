@@ -11,7 +11,7 @@ from asusiot_aissens_mqtt.packet_processor import (
     HexToTimestampInput,
     PacketProcessor,
 )
-from asusiot_aissens_mqtt.plugins.aissens.packet_common import (
+from asusiot_aissens_mqtt.plugins.input.aissens.packet_common import (
     DATA_TYPE_MAP,
     DataTypeName,
 )

@@ -4,11 +4,11 @@ from datetime import datetime
 from pydantic.config import JsonValue
 
 
-class DataSaverInterface(ABC):
+class OutputInterface(ABC):
     @abstractmethod
-    def save(self, timestamp: datetime, name: str, json_value: JsonValue) -> None:
+    def output(self, timestamp: datetime, name: str, json_value: JsonValue) -> None:
         """
-        Save a data record into the database.
+        Output data to target.
 
         Args:
             timestamp (datetime): The timestamp for the record.

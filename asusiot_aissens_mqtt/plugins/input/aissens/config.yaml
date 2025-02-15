@@ -1,0 +1,2 @@
+database:
+  path: sensor_data.db

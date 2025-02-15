@@ -1,21 +1,23 @@
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
+import yaml
 from pydantic.config import JsonValue
 
-from asusiot_aissens_mqtt.db.data_saver_interface import DataSaverInterface
-from asusiot_aissens_mqtt.db.sqlite import SqliteDataSaver
+from asusiot_aissens_mqtt.plugins.output.output_interface import OutputInterface
+from asusiot_aissens_mqtt.plugins.output.db.sqlite import SqliteDataSaver
 from asusiot_aissens_mqtt.packet_processor import (
     BytesExtractInput,
     HexToNumberInput,
     PacketProcessor,
 )
-from asusiot_aissens_mqtt.plugins.aissens.packet_fft import PacketFFTDecoder
-from asusiot_aissens_mqtt.plugins.aissens.packet_oa_only import (
+from asusiot_aissens_mqtt.plugins.input.aissens.packet_fft import PacketFFTDecoder
+from asusiot_aissens_mqtt.plugins.input.aissens.packet_oa_only import (
     PacketOADecoder,
 )
-from asusiot_aissens_mqtt.plugins.interface import Plugin
+from asusiot_aissens_mqtt.plugins.input.interface import Plugin
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,13 @@ pp = PacketProcessor()
 
 class Packet(Plugin):
     def __init__(self) -> None:
-        self.data_saver: DataSaverInterface = SqliteDataSaver("sensor_data.db")
+        # Read config file
+        config_path = Path(__file__).parent / "config.yaml"
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+
+        db_path = config.get("database", {}).get("path", "sensor_data.db")
+        self.data_saver: OutputInterface = SqliteDataSaver(db_path)
 
     def input(self, topic: str, payload: bytes, userdata: Any) -> None:
         logger.debug(
@@ -50,7 +58,9 @@ class Packet(Plugin):
                     sensor_name = self._get_sensor_name(topic)
                     if decoder.fft_packet:
                         self._output(
-                            decoder.fft_packet.timestamp, sensor_name, decoder.to_json()
+                            decoder.fft_packet.timestamp,
+                            sensor_name,
+                            decoder.to_json(),
                         )
                     else:
                         raise Exception("")
@@ -66,7 +76,9 @@ class Packet(Plugin):
                     sensor_name = self._get_sensor_name(topic)
                     if decoder.oa_packet:
                         self._output(
-                            decoder.oa_packet.timestamp, sensor_name, decoder.to_json()
+                            decoder.oa_packet.timestamp,
+                            sensor_name,
+                            decoder.to_json(),
                         )
                     else:
                         raise Exception("")
@@ -79,7 +91,7 @@ class Packet(Plugin):
     def _output(self, timestamp: datetime, name: str, data: JsonValue) -> None:
         # Save the data to the database
         try:
-            self.data_saver.save(timestamp, name, data)
+            self.data_saver.output(timestamp, name, data)
         except Exception as e:
             logger.error(f"Failed to save data to the database: {str(e)}")
 

@@ -4,10 +4,10 @@ from datetime import datetime
 
 from pydantic.config import JsonValue
 
-from asusiot_aissens_mqtt.db.data_saver_interface import DataSaverInterface
+from asusiot_aissens_mqtt.plugins.output.output_interface import OutputInterface
 
 
-class SqliteDataSaver(DataSaverInterface):
+class SqliteDataSaver(OutputInterface):
     def __init__(self, db_path: str = "data.db") -> None:
         self.conn = sqlite3.connect(db_path)
         self._init_db()
@@ -26,7 +26,7 @@ class SqliteDataSaver(DataSaverInterface):
         )
         self.conn.commit()
 
-    def save(self, timestamp: datetime, name: str, json_value: JsonValue) -> None:
+    def output(self, timestamp: datetime, name: str, json_value: JsonValue) -> None:
         cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO sensor_data (timestamp, name, json_value) VALUES (?, ?, ?)",
