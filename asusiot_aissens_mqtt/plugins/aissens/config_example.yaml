@@ -1,0 +1,4 @@
+output:
+  name: vibration_data
+tool: "tools.sqlite.sqlite"
+# tool: "tools.stdout.stdout"

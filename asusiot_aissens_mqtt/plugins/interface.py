@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
 
-from pydantic.config import JsonValue
-
 
 class Plugin(ABC):
     @abstractmethod
@@ -11,5 +9,5 @@ class Plugin(ABC):
         raise NotImplementedError("Plugin must implement input method")
 
     @abstractmethod
-    def _output(self, timestamp: datetime, name: str, data: JsonValue) -> None:
+    def _output(self, name: str, data: dict) -> None:
         raise NotImplementedError("Plugin must implement output method")

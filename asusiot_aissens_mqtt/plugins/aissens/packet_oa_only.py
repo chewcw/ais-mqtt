@@ -1,6 +1,8 @@
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import cast
+
 
 from asusiot_aissens_mqtt.packet_processor import (
     BytesExtractInput,
@@ -266,7 +268,7 @@ class PacketOADecoder:
 
         return self.oa_packet
 
-    def to_json(self) -> dict:
+    def to_json(self) -> str:
         """
         Converts the OAPacket instance to a JSON-serializable dictionary.
 
@@ -281,7 +283,7 @@ class PacketOADecoder:
                 "No packet data available. Please decode the packet first."
             )
 
-        return {
+        return json.dumps({
             "data_type": self.oa_packet.data_type,
             "data_type_name": self.oa_packet.data_type_name,
             "data_length": self.oa_packet.data_length,
@@ -295,4 +297,4 @@ class PacketOADecoder:
             "oa_y": float(self.oa_packet.oa_y),
             "oa_z": float(self.oa_packet.oa_z),
             "reserved": self.oa_packet.reserved,
-        }
+        })

@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import cast
@@ -11,7 +12,7 @@ from asusiot_aissens_mqtt.packet_processor import (
     HexToTimestampInput,
     PacketProcessor,
 )
-from asusiot_aissens_mqtt.plugins.input.aissens.packet_common import (
+from asusiot_aissens_mqtt.plugins.aissens.packet_common import (
     DATA_TYPE_MAP,
     DataTypeName,
 )
@@ -477,7 +478,7 @@ class PacketFFTDecoder:
 
         return self.fft_packet
 
-    def to_json(self) -> dict:
+    def to_json(self) -> str:
         """
         Converts the FFTPacket instance to a JSON-serializable dictionary.
 
@@ -490,7 +491,7 @@ class PacketFFTDecoder:
                 "No FFT packet data available. Please decode the packet first."
             )
 
-        return {
+        return json.dumps({
             "data_type": self.fft_packet.data_type,
             "data_type_name": self.fft_packet.data_type_name,
             "data_length": self.fft_packet.data_length,
@@ -527,7 +528,7 @@ class PacketFFTDecoder:
                 "y": self.fft_packet.vec_y_padded.tolist(),
                 "z": self.fft_packet.vec_z_padded.tolist(),
             },
-        }
+        })
 
     def plot(self):
         """

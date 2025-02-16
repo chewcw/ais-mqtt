@@ -1,0 +1,14 @@
+database:
+  path: /workspace/rnd/asusiot/data-collector/asusiot_aissens_mqtt/tools/sqlite/sensor_data_new.db
+
+tables:
+  - name: vibration_data
+    columns:
+      - name: timestamp
+        type: TEXT
+      - name: sensor_name
+        type: TEXT
+      - name: data_type
+        type: INTEGER
+      - name: json_value
+        type: TEXT
