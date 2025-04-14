@@ -12,7 +12,7 @@ from src.tools.tools_interface import OutputInterface
 logger = logging.getLogger(__name__)
 
 
-class PostgreSQL(OutputInterface):
+class Postgresql(OutputInterface):
     def __init__(self) -> None:
         self.config = self._load_config()
 
@@ -182,11 +182,26 @@ class PostgreSQL(OutputInterface):
         columns_sql = sql.SQL(", ").join(map(sql.Identifier, columns_list))
         placeholders_sql = sql.SQL(", ").join(sql.Placeholder() * len(columns_list))
 
-        # Build SQL query using sql module for safe quoting
-        insert_sql = sql.SQL("""
-        INSERT INTO {} ({})
-        VALUES ({})
-        """).format(sql.Identifier(name), columns_sql, placeholders_sql)
+        # Handle schema-qualified table names (e.g., "schema.table")
+        parts = name.split(".", 1)
+        if len(parts) == 2:
+            schema_name, table_name_only = parts
+            # Build SQL query for schema-qualified table
+            insert_sql = sql.SQL("""
+            INSERT INTO {}.{} ({})
+            VALUES ({})
+            """).format(
+                sql.Identifier(schema_name), 
+                sql.Identifier(table_name_only), 
+                columns_sql, 
+                placeholders_sql
+            )
+        else:
+            # No schema specified, use default behavior
+            insert_sql = sql.SQL("""
+            INSERT INTO {} ({})
+            VALUES ({})
+            """).format(sql.Identifier(name), columns_sql, placeholders_sql)
 
         # Get values in the same order as columns
         values_tuple = tuple(values[col["name"]] for col in columns)

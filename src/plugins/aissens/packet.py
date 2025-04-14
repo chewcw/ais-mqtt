@@ -78,7 +78,9 @@ class Packet(Plugin):
                     logger.info("Loaded configuration from config/config.yaml")
                     return yaml.safe_load(f)
             else:
-                logger.warning("config/config.yaml not found, using config/config_example.yaml")
+                logger.warning(
+                    "config/config.yaml not found, using config/config_example.yaml"
+                )
                 with open(example_config_path, "r") as f:
                     logger.info("Loaded configuration from config/config_example.yaml")
                     return yaml.safe_load(f)
@@ -124,7 +126,7 @@ class Packet(Plugin):
                     logger.error(f"Failed to decode FFT packet: {str(e)}")
 
             # OA related packets (9: OA only, 10: Real time OA only)
-            if data_type in [9, 10]:
+            elif data_type in [9, 10]:
                 logger.debug(f"Received OA data packet on topic {topic}")
                 try:
                     decoder = PacketOADecoder(payload)
@@ -145,12 +147,20 @@ class Packet(Plugin):
                 except Exception as e:
                     logger.error(f"Failed to decode OA packet: {str(e)}")
 
+            # Handle not supported data types
+            else:
+                logger.warning(
+                    f"Received unsupported data type {data_type} on topic {topic}"
+                )
+
         except Exception as e:
             logger.error(f"Failed to process packet: {str(e)}")
 
     def _output(self, name: str, data: dict) -> None:
         # Save the data to the database
         try:
+            # Log truncated data for debugging
+            logger.debug(f"Writing data to {name}: {data[:100]}{'...' if len(data) > 100 else ''}")
             self.data_saver.output(name, **data)
         except Exception as e:
             logger.error(f"Failed to save data to the database: {str(e)}")

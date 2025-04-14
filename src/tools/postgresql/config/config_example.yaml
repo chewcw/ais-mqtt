@@ -6,7 +6,7 @@ database:
   password: ${POSTGRES_PASSWORD:-postgres}
 
 tables:
-  - name: vibration_data
+  - name: "public.vibration_data"
     columns:
       - name: timestamp
         type: TIMESTAMP
