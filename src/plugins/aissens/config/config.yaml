@@ -1,0 +1,3 @@
+output:
+  name: vibration_data
+tool: "tools.stdout.stdout"

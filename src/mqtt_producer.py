@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 import paho.mqtt.client as mqtt
 
-from asusiot_aissens_mqtt.mqtt_config import MQTTConfig
+from src.mqtt_config import MQTTConfig
 
 
 class MQTTProducer:

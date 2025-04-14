@@ -1,7 +1,8 @@
 import paho.mqtt.client as mqtt
 from typing import Optional, Callable, Any
 import logging
-from asusiot_aissens_mqtt.mqtt_config import MQTTConfig
+import time
+from src.mqtt_config import MQTTConfig
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,33 @@ class MQTTConsumer:
         self.message_callback = callback
 
     def connect(self) -> None:
-        """Connect to MQTT broker"""
-        self.client.connect(self.config.broker, self.config.port)
+        """Connect to MQTT broker with retry mechanism"""
+        max_retries = 5
+        retry_delay = 2  # seconds
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(
+                    f"Attempting to connect to {self.config.broker}:{self.config.port} (attempt {attempt}/{max_retries})"
+                )
+                self.client.connect(self.config.broker, self.config.port)
+                logger.info(
+                    f"Successfully connected to {self.config.broker}:{self.config.port}"
+                )
+                return
+            except Exception as e:
+                logger.error(
+                    f"Connection attempt {attempt}/{max_retries} failed: {str(e)}"
+                )
+                if attempt < max_retries:
+                    wait_time = retry_delay * (
+                        2 ** (attempt - 1)
+                    )  # Exponential backoff
+                    logger.info(f"Waiting {wait_time} seconds before next attempt")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Failed to connect after {max_retries} attempts")
+                    raise
 
     def start(self) -> None:
         """Start the MQTT client loop"""

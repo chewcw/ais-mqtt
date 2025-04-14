@@ -1,5 +1,5 @@
 database:
-  path: /workspace/rnd/asusiot/data-collector/asusiot_aissens_mqtt/tools/sqlite/sensor_data_new.db
+  path: ${SQLITE_DATA_DIR:-./data}/${SQLITE_DB:-sensor_data.db}
 
 tables:
   - name: vibration_data

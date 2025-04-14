@@ -3,9 +3,9 @@ import logging
 import threading
 from typing import Any, Dict, List
 
-from asusiot_aissens_mqtt.mqtt_config import MQTTConfig
-from asusiot_aissens_mqtt.mqtt_consumer import MQTTConsumer
-from asusiot_aissens_mqtt.plugins.interface import Plugin
+from src.mqtt_config import MQTTConfig
+from src.mqtt_consumer import MQTTConsumer
+from src.plugins.interface import Plugin
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class MQTT(threading.Thread):
     def load_plugin(self, name: str) -> Plugin:
         """Load a plugin module."""
         parts = name.split(".")
-        module_path = f"asusiot_aissens_mqtt.plugins.{'.'.join(parts)}"
+        module_path = f"src.plugins.{'.'.join(parts)}"
         module = importlib.import_module(module_path)
         class_name = parts[-1].capitalize()
         return getattr(module, class_name)()

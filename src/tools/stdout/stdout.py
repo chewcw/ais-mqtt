@@ -1,4 +1,4 @@
-from asusiot_aissens_mqtt.tools.tools_interface import OutputInterface
+from src.tools.tools_interface import OutputInterface
 
 
 class Stdout(OutputInterface):

@@ -1,0 +1,19 @@
+database:
+  host: ${POSTGRES_HOST:-localhost}
+  port: 5432
+  database: ${POSTGRES_DB:-sensor_data}
+  user: ${POSTGRES_USER:-postgres}
+  password: ${POSTGRES_PASSWORD:-postgres}
+
+tables:
+  - name: vibration_data
+    columns:
+      - name: timestamp
+        type: TIMESTAMP
+      - name: sensor_name
+        type: VARCHAR(100)
+      - name: data_type
+        type: INTEGER
+      - name: json_value
+        type: JSONB
+

@@ -5,17 +5,17 @@ from typing import Any
 
 import yaml
 
-from asusiot_aissens_mqtt.packet_processor import (
+from src.plugins.aissens.packet_processor import (
     BytesExtractInput,
     HexToNumberInput,
     PacketProcessor,
 )
-from asusiot_aissens_mqtt.plugins.aissens.packet_fft import PacketFFTDecoder
-from asusiot_aissens_mqtt.plugins.aissens.packet_oa_only import (
+from src.plugins.aissens.packet_fft import PacketFFTDecoder
+from src.plugins.aissens.packet_oa_only import (
     PacketOADecoder,
 )
-from asusiot_aissens_mqtt.plugins.interface import Plugin
-from asusiot_aissens_mqtt.tools.tools_interface import OutputInterface
+from src.plugins.interface import Plugin
+from src.tools.tools_interface import OutputInterface
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class Packet(Plugin):
         """
         try:
             # Import the module
-            module_path = f"asusiot_aissens_mqtt.{tool_path}"
+            module_path = f"src.{tool_path}"
             module = importlib.import_module(module_path)
 
             # Get the class name from the last part of the path and capitalize it
@@ -61,23 +61,26 @@ class Packet(Plugin):
         except Exception as e:
             logger.error(f"Failed to create data saver: {str(e)}")
             logger.warning("Falling back to Sqlite")
-            from asusiot_aissens_mqtt.tools.sqlite.sqlite import Sqlite
+            from src.tools.sqlite.sqlite import Sqlite
 
             return Sqlite()
 
     def _load_config(self) -> dict:
-        """Load configuration from config.yaml or fallback to config_example.yaml"""
+        """Load configuration from config/config.yaml or fallback to config/config_example.yaml"""
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(current_dir, "config.yaml")
-        example_config_path = os.path.join(current_dir, "config_example.yaml")
+        config_dir = os.path.join(current_dir, "config")
+        config_path = os.path.join(config_dir, "config.yaml")
+        example_config_path = os.path.join(config_dir, "config_example.yaml")
 
         try:
             if os.path.exists(config_path):
                 with open(config_path, "r") as f:
+                    logger.info("Loaded configuration from config/config.yaml")
                     return yaml.safe_load(f)
             else:
-                logger.warning("config.yaml not found, using config_example.yaml")
+                logger.warning("config/config.yaml not found, using config/config_example.yaml")
                 with open(example_config_path, "r") as f:
+                    logger.info("Loaded configuration from config/config_example.yaml")
                     return yaml.safe_load(f)
         except Exception as e:
             logger.error(f"Failed to load config: {str(e)}")

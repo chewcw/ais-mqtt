@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import yaml
 
-from asusiot_aissens_mqtt.tools.tools_interface import OutputInterface
+from src.tools.tools_interface import OutputInterface
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +18,17 @@ class Sqlite(OutputInterface):
         if not self.config.get("tables"):
             raise ValueError("No table schema defined in the configuration")
 
-        # Get absolute path for database
+        # Get path for database (support environment variables and relative paths)
         db_path = self.config.get("database", {}).get("path", "data.db")
-        db_path = os.path.abspath(db_path)
+        
+        # Expand environment variables with defaults if present in path
+        db_path = os.path.expandvars(db_path)
+        
+        # If path is not absolute, make it relative to the module directory
+        if not os.path.isabs(db_path):
+            module_dir = os.path.dirname(os.path.abspath(__file__))
+            db_path = os.path.join(module_dir, db_path)
+            
         logger.info(f"Using database path: {db_path}")
 
         # Create directory if it doesn't exist
@@ -42,8 +50,10 @@ class Sqlite(OutputInterface):
             self.conn = sqlite3.connect(db_path)
             self.conn.execute("PRAGMA journal_mode=WAL")  # Use Write-Ahead Logging for better concurrent access
             logger.info(f"Connected to database: {db_path}")
-            if not os.path.exists(db_path):
-                logger.info("New database file created")
+            # Since connect() can create the file, explicitly log if this was a new database
+            is_new_db = not os.path.exists(db_path) or os.path.getsize(db_path) == 0
+            if is_new_db:
+                logger.info(f"New database file created: {os.path.basename(db_path)}")
         except sqlite3.Error as e:
             logger.error(f"Failed to connect to database {db_path}: {e}")
             raise
@@ -54,22 +64,23 @@ class Sqlite(OutputInterface):
         self._init_tables()
 
     def _load_config(self) -> dict:
-        # Try to load configuration
-        config_path = Path(__file__).parent / "config.yaml"
-        example_config_path = Path(__file__).parent / "config_example.yaml"
+        # Try to load configuration from the config directory
+        config_path = Path(__file__).parent / "config" / "config.yaml"
+        example_config_path = Path(__file__).parent / "config" / "config_example.yaml"
 
         if config_path.exists():
             try:
                 with open(config_path, "r") as f:
                     config = yaml.safe_load(f)
-                logger.info("Loaded configuration from config.yaml")
+                logger.info("Loaded configuration from config/config.yaml")
+                return config
             except Exception as e:
-                logger.warning(f"Failed to load config.yaml: {e}")
+                logger.warning(f"Failed to load config/config.yaml: {e}")
 
         try:
             with open(example_config_path, "r") as f:
                 config = yaml.safe_load(f)
-            logger.info("Loaded configuration from config_example.yaml")
+            logger.info("Loaded configuration from config/config_example.yaml")
             return config
         except Exception as e:
             raise ValueError(f"Failed to load any configuration: {e}")

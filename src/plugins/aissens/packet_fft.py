@@ -6,13 +6,13 @@ from typing import cast
 import matplotlib.pyplot as plt
 import numpy as np
 
-from asusiot_aissens_mqtt.packet_processor import (
+from src.plugins.aissens.packet_processor import (
     BytesExtractInput,
     HexToNumberInput,
     HexToTimestampInput,
     PacketProcessor,
 )
-from asusiot_aissens_mqtt.plugins.aissens.packet_common import (
+from src.plugins.aissens.packet_common import (
     DATA_TYPE_MAP,
     DataTypeName,
 )
