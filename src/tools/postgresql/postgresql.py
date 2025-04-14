@@ -191,10 +191,10 @@ class Postgresql(OutputInterface):
             INSERT INTO {}.{} ({})
             VALUES ({})
             """).format(
-                sql.Identifier(schema_name), 
-                sql.Identifier(table_name_only), 
-                columns_sql, 
-                placeholders_sql
+                sql.Identifier(schema_name),
+                sql.Identifier(table_name_only),
+                columns_sql,
+                placeholders_sql,
             )
         else:
             # No schema specified, use default behavior

@@ -159,8 +159,8 @@ class Packet(Plugin):
     def _output(self, name: str, data: dict) -> None:
         # Save the data to the database
         try:
-            # Log truncated data for debugging
-            logger.debug(f"Writing data to {name}: {data[:100]}{'...' if len(data) > 100 else ''}")
+            # Log truncated data for debugging - safely convert dict to string for logging
+            logger.debug(f"Writing data to {name}: {str(data)[:100]}{'...' if len(str(data)) > 100 else ''}")
             self.data_saver.output(name, **data)
         except Exception as e:
             logger.error(f"Failed to save data to the database: {str(e)}")
