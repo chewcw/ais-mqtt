@@ -59,6 +59,7 @@ class PacketFFT:
         vec_x_padded (np.ndarray): Zero-padded velocity values for X axis
         vec_y_padded (np.ndarray): Zero-padded velocity values for Y axis
         vec_z_padded (np.ndarray): Zero-padded velocity values for Z axis
+        freqs (np.ndarray): Frequency values for FFT
     """
 
     # Data type
@@ -108,6 +109,7 @@ class PacketFFT:
     vec_z_padded: np.ndarray
     velocity_data: dict[str, np.ndarray]
     acceleration_data: dict[str, np.ndarray]
+    freqs: np.ndarray
 
 
 class FFTDecodeError(Exception):
@@ -474,6 +476,7 @@ class PacketFFTDecoder:
             vec_z_padded=vec_z_padded,
             velocity_data=velocity_data,
             acceleration_data=acceleration_data,
+            freqs=np.arange(fft_length) * freq_resolution,
         )
 
         return self.fft_packet
@@ -494,7 +497,6 @@ class PacketFFTDecoder:
         return json.dumps({
             "data_type": self.fft_packet.data_type,
             "data_type_name": self.fft_packet.data_type_name,
-            "data_length": self.fft_packet.data_length,
             "timestamp": self.fft_packet.timestamp.isoformat(),
             "fft_result": self.fft_packet.fft_result,
             "battery_level": self.fft_packet.battery_level,
@@ -506,18 +508,6 @@ class PacketFFTDecoder:
             "oa_z": float(self.fft_packet.oa_z),
             "freq_resolution": float(self.fft_packet.freq_resolution),
             "fft_length": self.fft_packet.fft_length,
-            "report_len": self.fft_packet.report_len,
-            "reserved_bytes": self.fft_packet.reserved_bytes.hex(),
-            "acceleration_data": {
-                "x": self.fft_packet.acceleration_data["x"].tolist(),
-                "y": self.fft_packet.acceleration_data["y"].tolist(),
-                "z": self.fft_packet.acceleration_data["z"].tolist(),
-            },
-            "velocity_data": {
-                "x": self.fft_packet.velocity_data["x"].tolist(),
-                "y": self.fft_packet.velocity_data["y"].tolist(),
-                "z": self.fft_packet.velocity_data["z"].tolist(),
-            },
             "padded_acceleration_data": {
                 "x": self.fft_packet.acc_x_padded.tolist(),
                 "y": self.fft_packet.acc_y_padded.tolist(),
@@ -528,6 +518,7 @@ class PacketFFTDecoder:
                 "y": self.fft_packet.vec_y_padded.tolist(),
                 "z": self.fft_packet.vec_z_padded.tolist(),
             },
+            "freqs": self.fft_packet.freqs.tolist(),
         })
 
     def plot(self):

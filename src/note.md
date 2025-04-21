@@ -21,12 +21,6 @@
 
 
 
-
-
-
-
-
-
 ---
 
 Basically, the FFT length
@@ -80,5 +74,25 @@ These measurements are crucial for diagnosing equipment health and identifying p
 [Measurement of vibration - DMC](https://www.dmc.pt/en/medicao-de-vibracoes/)
 [Vibration Measurements: Vibration Analysis Basics](https://blog.endaq.com/vibration-measurements-vibration-analysis-basics)
 
+--------------------
 
+fft_length: 24576
+report_len: 11019
+data_length: 264506
+acc:
+x: 11019
+y: 11019
+z: 11019
+vec:
+x: 11019
+y: 11019
+z: 11019
+padded acc:
+x: 24576
+y: 24576
+z: 24576
+padded vec:
+x: 24576
+y: 24576
+z: 24576
 
