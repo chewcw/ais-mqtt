@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import cast
 
 import matplotlib.pyplot as plt
@@ -32,7 +32,8 @@ class PacketFFT:
         data_type (int): Type of data packet (0-255, see type table in code)
         data_type_name (str): Human readable name for the data type (e.g. "Raw data", "FFT data", etc.)
         data_length (int): Length of the data payload
-        timestamp (datetime): Timestamp of when the data was captured
+        sensor_timestamp (datetime): Timestamp from the sensor when the data was captured
+        timestamp (datetime): Timestamp from the mqtt-client when the data was received
         fft_result (int): Result of FFT calculation
         battery_level (int): Current battery level
         adcavg (float): Average ADC value
@@ -82,6 +83,7 @@ class PacketFFT:
     data_type: int
     data_type_name: DataTypeName
     data_length: int
+    sensor_timestamp: datetime
     timestamp: datetime
     fft_result: int
     battery_level: int
@@ -449,7 +451,8 @@ class PacketFFTDecoder:
             data_type=int(data_type),
             data_type_name=data_type_name,
             data_length=int(data_length),
-            timestamp=timestamp,
+            sensor_timestamp=timestamp,
+            timestamp=datetime.now(timezone.utc),
             fft_result=int(fft_result),
             battery_level=int(battery_level),
             adcavg=int(adcavg),
@@ -497,7 +500,7 @@ class PacketFFTDecoder:
         return json.dumps({
             "data_type": self.fft_packet.data_type,
             "data_type_name": self.fft_packet.data_type_name,
-            "timestamp": self.fft_packet.timestamp.isoformat(),
+            "sensor_timestamp": self.fft_packet.sensor_timestamp.isoformat(),
             "fft_result": self.fft_packet.fft_result,
             "battery_level": self.fft_packet.battery_level,
             "adcavg": self.fft_packet.adcavg,
