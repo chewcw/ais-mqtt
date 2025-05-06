@@ -10,9 +10,9 @@ from src.mqtt import MQTT
 # from src.plugins.aissens.packet_test import main as packet_test_main
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.DEBUG)
 logging.basicConfig(
-    level=logging.DEBUG,
+    # level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 

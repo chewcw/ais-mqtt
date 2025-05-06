@@ -1,0 +1,39 @@
+rawdata_aissens
+| order by dateTimeGenerated desc
+
+
+| project dateTimeGenerated, site, zlib_data_decompressed=zlib_decompress_from_base64_string(zlib_data)
+
+| project dateTimeGenerated, site, data=parse_json(data_decompressed)
+
+// -------------------------
+
+
+
+
+.create table rawdata_aissens (site: string, dateTimeGenerated: datetime, zlib_data: string)
+
+.create-or-alter table rawdata_aissens ingestion json mapping "json_mapping"
+'['
+'{"column":"site","path":"$[\'site\']","datatype":"string","transform":null},'
+'{"column":"dateTimeGenerated","path":"$[\'dateTimeGenerated\']","datatype":"datetime","transform":null},'
+'{"column":"zlib_data","path":"$[\'zlilb_data\']","datatype":"string","transform":null}'
+']'
+
+
+
+.create table rawdata_aissens (site: string, dateTimeGenerated: datetime, data: string, correlationId: string, partIndex: int, totalParts: int) 
+
+.create-or-alter table rawdata_aissens ingestion json mapping "json_mapping"
+'['
+'{"column":"site","path":"$[\'site\']","datatype":"string","transform":null},'
+'{"column":"dateTimeGenerated","path":"$[\'dateTimeGenerated\']","datatype":"datetime","transform":null},'
+'{"column":"data","path":"$[\'data\']","datatype":"string","transform":null},'
+'{"column":"partIndex","path":"$[\'partIndex\']","datatype":"int","transform":null},'
+'{"column":"totalParts","path":"$[\'totalParts\']","datatype":"int","transform":null}'
+']'
+
+
+.drop table rawdata_aissens
+
+

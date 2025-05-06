@@ -18,6 +18,7 @@ from src.plugins.interface import Plugin
 from src.tools.tools_interface import OutputInterface
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 pp = PacketProcessor()
 
@@ -90,7 +91,7 @@ class Packet(Plugin):
 
     def input(self, topic: str, payload: bytes, userdata: Any) -> None:
         logger.debug(
-            f"Received message on topic {topic}, payload: {payload.hex()[:20]}..."
+            f"Received message on topic {topic}, payload: {payload.hex()[:10]}..."
         )
 
         try:

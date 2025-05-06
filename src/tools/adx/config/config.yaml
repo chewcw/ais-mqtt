@@ -1,0 +1,23 @@
+connection:
+  cluster_uri: "${ADX_CLUSTER_URI}"
+  data_ingestion_uri: "${ADX_INGESTION_URI}"
+  database_name: "${ADX_DATABASE_NAME}"
+  auth_type: "app"
+  
+  app_id: "${ADX_APP_ID}"
+  app_key: "${ADX_APP_KEY}"
+  tenant_id: "${ADX_TENANT_ID}"
+
+default_site: "yny"
+
+enable_status_monitoring: true
+
+tables:
+  - name: rawdata_aissens
+    columns:
+      - name: site
+        type: TEXT
+      - name: dateTimeGenerated
+        type: TIMESTAMP
+      - name: data
+        type: JSON

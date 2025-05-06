@@ -1,0 +1,36 @@
+# Azure Data Explorer (ADX) Configuration Example
+
+connection:
+  # Cluster URI (required)
+  cluster_uri: "${ADX_CLUSTER_URI}"
+
+  # Data Ingestion URI (required)
+  data_ingestion_uri: "${ADX_INGESTION_URI}"
+  
+  # Database name (required)
+  database_name: "${ADX_DATABASE_NAME}"
+  
+  # Authentication type: "app" or "managed_identity"
+  auth_type: "app"
+  
+  # For app authentication, provide these:
+  app_id: "${ADX_APP_ID}"
+  app_key: "${ADX_APP_KEY}"
+  tenant_id: "${ADX_TENANT_ID}"
+
+# Whether to attempt creating tables if they don't exist
+create_tables_if_not_exist: true
+
+# Default site identifier (used if not specified in output call)
+default_site: "default-site"
+
+# Define table schemas (using standardized schema)
+tables:
+  - name: rawdata_aissens
+    columns:
+      - name: site
+        type: TEXT
+      - name: dateTimeGenerated
+        type: TIMESTAMP
+      - name: data
+        type: JSON

@@ -4,6 +4,6 @@ mqtt:
   consumer:
     client_id: consumer
     topics:
-      - name: S9IMP6000067BSF/report
+      - name: S9IMP6000116M96/report
         qos: 2
         plugin: "aissens.packet"

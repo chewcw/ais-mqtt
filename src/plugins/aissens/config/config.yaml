@@ -1,3 +1,4 @@
 output:
-  name: vibration_data
-tool: "tools.stdout.stdout"
+  name: rawdata_aissens
+# tool: "tools.stdout.stdout"
+tool: "tools.adx.adx"
