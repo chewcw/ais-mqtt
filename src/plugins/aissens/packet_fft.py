@@ -173,7 +173,7 @@ class PacketFFTDecoder:
                 BytesExtractInput(data=self.file_bytes, offset=5, length=8)
             )
             timestamp = pp.hex_to_timestamp(
-                HexToTimestampInput(hex_str=timestamp_hex, endian="little")
+                HexToTimestampInput(hex_str=timestamp_hex, endian="big")
             )
         except Exception as e:
             raise FFTDecodeError("timestamp", e)
@@ -206,10 +206,9 @@ class PacketFFTDecoder:
             adcavg_hex = pp.extract_hex(
                 BytesExtractInput(data=self.file_bytes, offset=15, length=2)
             )
-            adcavg = pp.hex_to_number(
-                HexToNumberInput(hex_str=adcavg_hex, data_type="int", endian="little")
+            adcavg = pp.hex_to_adc(
+                HexToNumberInput(hex_str=adcavg_hex, data_type="int", endian="big")
             )
-            adcavg = adcavg / 1000
         except Exception as e:
             raise FFTDecodeError("adcavg", e)
 
@@ -217,10 +216,9 @@ class PacketFFTDecoder:
             adclast_hex = pp.extract_hex(
                 BytesExtractInput(data=self.file_bytes, offset=17, length=2)
             )
-            adclast = pp.hex_to_number(
-                HexToNumberInput(hex_str=adclast_hex, data_type="int", endian="little")
+            adclast = pp.hex_to_adc(
+                HexToNumberInput(hex_str=adclast_hex, data_type="int", endian="big")
             )
-            adclast = adclast / 1000
         except Exception as e:
             raise FFTDecodeError("adclast", e)
 
@@ -228,12 +226,11 @@ class PacketFFTDecoder:
             temperature_hex = pp.extract_hex(
                 BytesExtractInput(data=self.file_bytes, offset=19, length=2)
             )
-            temperature = pp.hex_to_number(
+            temperature = pp.hex_to_temperature(
                 HexToNumberInput(
-                    hex_str=temperature_hex, data_type="int", endian="little"
+                    hex_str=temperature_hex, data_type="int", endian="big"
                 )
             )
-            temperature = temperature / 1000
         except Exception as e:
             raise FFTDecodeError("temperature", e)
 

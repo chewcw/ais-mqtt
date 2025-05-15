@@ -175,3 +175,78 @@ class PacketProcessor:
                 return datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC"))
         else:
             return datetime.fromtimestamp(timestamp, tz=ZoneInfo("UTC"))
+
+    def hex_to_temperature(self, input_data: HexToNumberInput) -> float:
+        """
+        Converts hexadecimal string to temperature in Celsius.
+        The formula used is:
+            temperature = hex_value / 256.0 + 28
+
+        Args:
+            input_data (HexToNumberInput): Pydantic model containing:
+                - hex_str (str): Hexadecimal string (1 to 2 bytes)
+                - endian (str): Byte order ('big' or 'little')
+
+        Returns:
+            float: Temperature in Celsius
+
+        Example:
+            >>> processor = PacketProcessor()
+            >>> processor.hex_to_temperature(HexToNumberInput(hex_str='fded', data_type='float'))
+            25.92
+        """
+        hex_str = input_data.hex_str
+        byte_data = bytes.fromhex(hex_str)
+        byte_length = len(byte_data)
+
+        # Define format string based on endianness
+        fmt = "<" if input_data.endian == "little" else ">"
+
+        # Add format specifier based on data type and byte length
+        if byte_length == 1:
+            fmt += "b"
+        elif byte_length == 2:
+            fmt += "h"
+        else:
+            raise ValueError("Temperature conversion requires 1 or 2 bytes")
+        # Unpack the bytes according to the format
+        value = struct.unpack(fmt, byte_data)[0]
+        # Convert to temperature
+        temperature = value / 256.0 + 28
+        return temperature
+
+    def hex_to_adc(self, input_data: HexToNumberInput) -> float:
+        """
+        Converts hexadecimal string to ADC value.
+        The formula used is:
+            adc_value = (hex_value - 1400) * 0.001547 + 2.7
+        Args:
+            input_data (HexToNumberInput): Pydantic model containing:
+                - hex_str (str): Hexadecimal string (1 to 2 bytes)
+                - endian (str): Byte order ('big' or 'little')
+        Returns:
+            float: ADC value
+        Example:
+            >>> processor = PacketProcessor()
+            >>> processor.hex_to_adc(HexToNumberInput(hex_str='fded', data_type='float'))
+            2.7
+        """
+        hex_str = input_data.hex_str
+        byte_data = bytes.fromhex(hex_str)
+        byte_length = len(byte_data)
+
+        # Define format string based on endianness
+        fmt = "<" if input_data.endian == "little" else ">"
+
+        # Add format specifier based on data type and byte length
+        if byte_length == 1:
+            fmt += "b"
+        elif byte_length == 2:
+            fmt += "h"
+        else:
+            raise ValueError("ADC conversion requires 1 or 2 bytes")
+        # Unpack the bytes according to the format
+        value = struct.unpack(fmt, byte_data)[0]
+        # Convert to ADC value
+        adc_value = (value - 1400) * 0.001547 + 2.7
+        return adc_value
